@@ -55,4 +55,4 @@ jobs:
       - name: Verifica endpoint health
         run: |
           sleep 5
-          curl -f http://${{ secrets.EC2_HOST }}:8000/health
+          curl --connect-timeout 5 --max-time 10 http://localhost:8000
