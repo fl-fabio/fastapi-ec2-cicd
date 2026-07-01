@@ -1,0 +1,58 @@
+name: Deploy FastAPI on EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recupero del codice
+        uses: actions/checkout@v4
+
+      - name: Build immagine Docker
+        run: |
+          docker build -t fastapi-ec2-cicd .
+
+  deploy:
+    name: Deploy su EC2
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Configurazione SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key.pem
+          chmod 400 ~/.ssh/ec2_key.pem
+          ssh-keyscan -p "${{ secrets.EC2_PORT }}" "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Aggiornamento applicazione su EC2
+        run: |
+          ssh -i ~/.ssh/ec2_key.pem -p "${{ secrets.EC2_PORT }}" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" << 'EOF'
+            set -e
+
+            mkdir -p ~/apps
+
+            if [ ! -d ~/apps/fastapi-ec2-cicd/.git ]; then
+              git clone ${{ secrets.REPOSITORY_URL }} ~/apps/fastapi-ec2-cicd
+            fi
+
+            cd ~/apps/fastapi-ec2-cicd
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            docker compose down
+            docker compose up -d --build
+            docker image prune -f
+          EOF
+
+      - name: Verifica endpoint health
+        run: |
+          sleep 5
+          curl -f http://${{ secrets.EC2_HOST }}:8000/health
