@@ -30,6 +30,12 @@ courses = [
         "title": "CI/CD con GitHub Actions",
         "level": "avanzato",
         "hours": 18
+    },
+    {
+        "id": 5,
+        "title": "Test Python",
+        "level": "avanzato",
+        "hours": 10
     }
 ]
 
