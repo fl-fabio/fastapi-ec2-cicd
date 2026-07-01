@@ -4,4 +4,4 @@ services:
     container_name: fastapi-ec2-cicd
     ports:
       - "8000:8000"
-    restart: unless-stopped
+    restart: always
